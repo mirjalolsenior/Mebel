@@ -24,3 +24,4 @@ Notes:
 - For production, add proper Auth & RLS in Supabase and secure keys.
 # Mebel
 # Mebel
+# Mebel
