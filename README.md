@@ -22,3 +22,4 @@ Admin:
 Notes:
 - Replace Supabase URL / ANON KEY in src/supabaseClient.js if you want to use different credentials.
 - For production, add proper Auth & RLS in Supabase and secure keys.
+# Mebel
