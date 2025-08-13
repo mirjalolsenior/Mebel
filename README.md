@@ -1,27 +1,34 @@
-# Mebel Dashboard - Vite + React + Supabase (v3)
-Features:
-- 4 sections: Products, Orders, Clients, CustomSection
-- Separate Admin page at /admin (password: sherzod)
-- Supabase realtime subscriptions for each table
-- Totals shown under each table
-- Responsive layout and PWA service-worker skeleton
+Mebel Dashboard (PWA) — Netlify-ready
+=====================================
 
-Quick start:
-1. unzip the project
-2. cd mebel-supabase-project-v3
-3. npm install
-4. Run SQL in Supabase from sql/schema.sql to create tables
-5. npm run dev
-6. Open http://localhost:5173 (or the URL shown by Vite)
+🚀 Nimalar bor:
+- 4 bo‘lim: Tovarlar, Zakazlar, Doimiy mijozlar, Mijozlar
+- Supabase real-time (INSERT paytida avtomatik yangilanish)
+- PWA: `manifest.json`, `service-worker.js` (offline cache, homescreen install)
+- Bildirishnoma: 
+  - Zakaz (orders.delivery_date) bo‘yicha **ertasi kuni** va **o‘sha kuni** eslatadi
+  - Yangi yozuv qo‘shilganda real-time xabar
+- Admin panel (parol: `sherzod`): ma’lumotlarni o‘chirish
 
-Admin:
-- Visit /admin or click Admin in the navbar
-- Enter password: sherzod
-- In admin mode you can delete rows from all tables
+🧩 Muhim:
+- `orders` jadvalida `customer_name` ustuni bo‘lsa yaxshi. Bo‘lmasa, SQL bilan qo‘shing:
+  ```sql
+  alter table public.orders add column if not exists customer_name text;
+  ```
+- `products`, `orders`, `clients`, `custom_section` jadvallari mavjud bo‘lishi kerak.
 
-Notes:
-- Replace Supabase URL / ANON KEY in src/supabaseClient.js if you want to use different credentials.
-- For production, add proper Auth & RLS in Supabase and secure keys.
-# Mebel
-# Mebel
-# Mebel
+📦 Deploy (Netlify Drop):
+1) https://app.netlify.com/drop → ushbu ZIP faylni tashlang.
+2) Sayt ochiladi: /
+3) Admin: /admin.html
+
+🔔 Bildirishnomalar qanday ishlaydi?
+- Birinchi kirganda ruxsat so‘raydi (Allow bosish kerak).
+- Sahifa ochiq yoki PWA o‘rnatilgan holda backgound’da bo‘lsa — service worker `showNotification` qiladi.
+- **To‘liq push server** kerak bo‘lmasa — shu yetarli. To‘liq push (yopiq holatda ham schedule) uchun keyingi bosqichda Netlify Functions + Web Push (VAPID) qo‘shamiz.
+
+🗂 Jadval maydonlari (minimal):
+- products: id, created_at, type, model, purchase_price, paid_amount, quantity, delivery_date
+- orders: id, created_at, customer_name, product_type, model, quantity, paid_amount, remaining, delivery_date
+- clients: id, created_at, name, brought_quantity, tape_used, paid_amount, remaining_amount
+- custom_section: id, created_at, name, brought_quantity, tape_used, paid_amount, remaining_amount

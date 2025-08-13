@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin — Mebel Dashboard</title>
+  <link rel="icon" href="/favicon.ico">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#5b8def" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter','ui-sans-serif','system-ui'] },
+          colors: { primary: { DEFAULT: '#5b8def' } }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="font-sans bg-gradient-to-tr from-slate-900 via-indigo-900 to-sky-800 min-h-screen text-white/90">
+  <div class="max-w-6xl mx-auto p-6">
+    <header class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold">🔐 Admin Panel</h1>
+      <a href="/" class="px-3 py-2 rounded-lg bg-white/15">Ortga</a>
+    </header>
+
+    <div class="bg-white/10 border border-white/20 rounded-2xl p-4">
+      <form id="admin-login-form" class="flex flex-col md:flex-row gap-3">
+        <input name="password" type="password" placeholder="Parol: sherzod" class="flex-1 px-3 py-2 rounded-lg bg-white/20 border border-white/30 outline-none">
+        <button class="px-4 py-2 rounded-lg bg-primary">Kirish</button>
+      </form>
+      <div id="admin-controls" class="hidden mt-4">
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="bg-white/10 border border-white/20 rounded-2xl p-3"><h3 class="font-semibold mb-2">Products</h3><div id="admin-products" class="table-wrap"></div></div>
+          <div class="bg-white/10 border border-white/20 rounded-2xl p-3"><h3 class="font-semibold mb-2">Orders</h3><div id="admin-orders" class="table-wrap"></div></div>
+          <div class="bg-white/10 border border-white/20 rounded-2xl p-3"><h3 class="font-semibold mb-2">Clients</h3><div id="admin-clients" class="table-wrap"></div></div>
+          <div class="bg-white/10 border border-white/20 rounded-2xl p-3"><h3 class="font-semibold mb-2">Doimiy mijozlar</h3><div id="admin-custom" class="table-wrap"></div></div>
+        </div>
+        <button id="logout-btn" class="mt-4 px-4 py-2 rounded-lg bg-white/15">Chiqish</button>
+      </div>
+    </div>
+
+    <div id="toast" class="fixed right-4 bottom-4 hidden px-3 py-2 rounded-lg bg-black/80 text-white text-sm"></div>
+  </div>
+
+  <script type="module" src="/admin.js"></script>
+  <style>
+    .table-wrap{ background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.16); border-radius:12px; padding:8px; overflow:auto }
+    table{ width:100%; min-width:640px }
+    th,td{ white-space:nowrap; padding:8px 10px; border-bottom:1px solid rgba(255,255,255,0.12) }
+    thead tr th{ position:sticky; top:0; background:rgba(15,15,25,0.35); backdrop-filter:blur(6px) }
+    .btn-del{ background:#ef5b5b; color:#fff; padding:6px 10px; border-radius:10px }
+  </style>
+</body>
+</html>
