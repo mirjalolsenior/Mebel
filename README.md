@@ -1,26 +1,11 @@
-# Mebel Dashboard — Deluxe (Attractive + PWA + Notifications)
+Mebel Netlify-ready
 
-- Jozibador **Landing** (hero, gradient, animatsiya)
-- **Card-based** responsiv UI (telefon/desktop)
-- Supabase **Realtime** + OS **bildirishnoma** (permission berilganda)
-- To'liq **PWA** (offline cache, A2HS)
-- **Netlify** uchun `_redirects` (SPA router)
+How to run locally:
+1. .env included with Supabase credentials (or edit .env)
+2. npm i
+3. npm run dev
 
-## O'rnatish
-```
-npm i
-cp .env.example .env  # va qiymatlarni to'ldiring
-npm run dev
-```
-
-## PWA
-- `manifest.json` + `sw.js` mavjud
-- HTTPSda (Netlify) o'rnatish va offline ishlash avtomatik
-
-## Bildirishnoma
-- Brauzer ruxsat berganida, yangi **tovar** yoki **zakaz** qo'shilsa OS notification ko'rinadi.
-- Push (FCM/OneSignal) qo'shmoqchi bo'lsangiz keyin integratsiya qilamiz.
-
-## Netlify
-- `public/_redirects` fayli bor → SPA yo'llari `/index.html`ga tushadi
-- Deploy: `npm run build` va `dist/`ni Netlifyga yuboring
+Netlify:
+- Build: npm run build
+- Publish directory: dist
+- Add environment variables in Netlify (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_ADMIN_PASSWORD)

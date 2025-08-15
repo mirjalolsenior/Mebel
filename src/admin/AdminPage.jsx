@@ -1,17 +1,17 @@
-import React, {useState} from 'react'
-import AdminPanel from './AdminPanel'
-import { useNavigate } from 'react-router-dom'
+import React, {useState} from 'react';
+import AdminPanel from './AdminPanel';
+import { useNavigate } from 'react-router-dom';
 
 export default function AdminPage(){
-  const [authorized, setAuthorized] = useState(false)
-  const [pass, setPass] = useState('')
-  const navigate = useNavigate()
+  const [authorized, setAuthorized] = useState(false);
+  const [pass, setPass] = useState('');
+  const navigate = useNavigate();
 
   function handleLogin(e){
-    e.preventDefault()
-    const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASSWORD || ''
-    if(pass && ADMIN_PASS && pass === ADMIN_PASS){ setAuthorized(true) } 
-    else alert('Parol noto\'g\'ri yoki sozlanmagan')
+    e.preventDefault();
+    const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASSWORD || '';
+    if(pass && ADMIN_PASS && pass === ADMIN_PASS){ setAuthorized(true); }
+    else alert('Parol noto\'g\'ri yoki sozlanmagan');
   }
 
   if(!authorized){
