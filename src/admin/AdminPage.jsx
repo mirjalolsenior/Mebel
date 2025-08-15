@@ -9,7 +9,8 @@ export default function AdminPage(){
 
   function handleLogin(e){
     e.preventDefault()
-    if(pass === 'sherzod'){ setAuthorized(true) } else alert('Parol noto\'g\'ri')
+    const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASSWORD || 'sherzod';
+    if(pass === ADMIN_PASS){ setAuthorized(true) } else alert('Parol noto\'g\'ri')
   }
 
   if(!authorized){
