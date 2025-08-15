@@ -9,21 +9,21 @@ export default function AdminPage(){
 
   function handleLogin(e){
     e.preventDefault()
-    if(pass === 'sherzod'){ setAuthorized(true) } else alert('Parol noto\'g\'ri')
+    const ADMIN_PASS = import.meta.env.VITE_ADMIN_PASSWORD || ''
+    if(pass && ADMIN_PASS && pass === ADMIN_PASS){ setAuthorized(true) } 
+    else alert('Parol noto\'g\'ri yoki sozlanmagan')
   }
 
   if(!authorized){
     return (
-      <div className="container">
-        <div className="card">
-          <h3>Admin kirish</h3>
-          <form onSubmit={handleLogin}>
-            <div className="form-row">
-              <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="Parol" />
-            </div>
-            <div style={{marginTop:8}}>
-              <button type="submit">Kirish</button>
-              <button type="button" onClick={()=>navigate('/')} style={{marginLeft:8}}>Ortga</button>
+      <div className="container" style={{paddingTop:40}}>
+        <div className="card" style={{maxWidth:420, margin:'60px auto'}}>
+          <h2>Admin</h2>
+          <form onSubmit={handleLogin} className="form-row">
+            <input type="password" value={pass} onChange={e=>setPass(e.target.value)} placeholder="Parol" />
+            <div style={{display:'flex',gap:8}}>
+              <button className="btn primary" type="submit">Kirish</button>
+              <button className="btn" type="button" onClick={()=>navigate('/')}>Ortga</button>
             </div>
           </form>
         </div>

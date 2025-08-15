@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react'
 import { supabase } from '../supabaseClient'
+import { fmt } from '../utils'
 
 export default function AdminPanel({onLogout}){
   const [products, setProducts] = useState([])
@@ -15,55 +16,77 @@ export default function AdminPanel({onLogout}){
     setProducts(p||[]); setOrders(o||[]); setClients(c||[]); setCustoms(cs||[])
   }
 
-  useEffect(()=>{ fetchAll()
-    const subs = [
-      supabase.channel('public:products').on('postgres_changes',{event:'*',schema:'public',table:'products'},()=>fetchAll()).subscribe(),
-      supabase.channel('public:orders').on('postgres_changes',{event:'*',schema:'public',table:'orders'},()=>fetchAll()).subscribe(),
-      supabase.channel('public:clients').on('postgres_changes',{event:'*',schema:'public',table:'clients'},()=>fetchAll()).subscribe(),
-      supabase.channel('public:custom_section').on('postgres_changes',{event:'*',schema:'public',table:'custom_section'},()=>fetchAll()).subscribe()
-    ]
-    return ()=> subs.forEach(s=>supabase.removeChannel(s))
-  },[])
+  useEffect(()=>{ fetchAll() }, [])
 
-  async function deleteRow(table, id){
-    if(!confirm('O\'chirilsinmi?')) return
+  async function remove(table, id){
+    if(!confirm("O'chirishni tasdiqlaysizmi?")) return
     const { error } = await supabase.from(table).delete().eq('id', id)
-    if(error) alert('Delete error: '+error.message)
-    else fetchAll()
+    if(error) alert(error.message); else fetchAll()
   }
 
   return (
-    <div>
-      <div className="card">
+    <div className="container" style={{paddingTop:20}}>
+      <div className="card" style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
         <h2>Admin panel</h2>
-        <p>Bu yerda barcha jadvallarni ko'rish va o'chirish mumkin.</p>
-        <div style={{marginTop:8}}>
-          <button onClick={onLogout} className="btn-small">Chiqish</button>
-        </div>
+        <button className="btn" onClick={onLogout}>Chiqish</button>
       </div>
 
-      <div className="card">
-        <h3>Products</h3>
-        <table><thead><tr><th>#</th><th>Turi</th><th>Model</th><th>Olingan</th><th>Berilgan</th><th>Qolgan</th><th></th></tr></thead>
-        <tbody>{products.map((p, i)=>(<tr key={p.id}><td>{i+1}</td><td>{p.type}</td><td>{p.model}</td><td>{p.purchase_price}</td><td>{p.paid_amount}</td><td>{p.quantity}</td><td><button className="btn-danger" onClick={()=>deleteRow('products', p.id)}>O'chirish</button></td></tr>))}</tbody></table>
+      <div className="card"><h3>Tovarlar</h3></div>
+      <div className="grid">
+        {products.map(p=>(
+          <div className="card" key={p.id}>
+            <div className="row"><strong>{p.type}</strong><button className="btn danger" onClick={()=>remove('products', p.id)}>O'chirish</button></div>
+            <div className="kv">
+              <strong>Olingan:</strong><div>{fmt(p.purchase_price)} so'm</div>
+              <strong>Berilgan:</strong><div>{fmt(p.paid_amount)} so'm</div>
+              <strong>Miqdor:</strong><div>{fmt(p.quantity)}</div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="card">
-        <h3>Orders</h3>
-        <table><thead><tr><th>#</th><th>Turi</th><th>Model</th><th>Oldi</th><th>Berildi</th><th>Qolgan</th><th></th></tr></thead>
-        <tbody>{orders.map((o, i)=>(<tr key={o.id}><td>{i+1}</td><td>{o.product_type}</td><td>{o.model}</td><td>{o.quantity}</td><td>{o.paid_amount}</td><td>{o.remaining}</td><td><button className="btn-danger" onClick={()=>deleteRow('orders', o.id)}>O'chirish</button></td></tr>))}</tbody></table>
+      <div className="card"><h3>Zakazlar</h3></div>
+      <div className="grid">
+        {orders.map(o=>(
+          <div className="card" key={o.id}>
+            <div className="row"><strong>{o.product_type}</strong><button className="btn danger" onClick={()=>remove('orders', o.id)}>O'chirish</button></div>
+            <div className="kv">
+              <strong>Miqdor:</strong><div>{fmt(o.quantity)}</div>
+              <strong>Berilgan:</strong><div>{fmt(o.paid_amount)} so'm</div>
+              <strong>Qolgan:</strong><div>{fmt(o.remaining_amount)} so'm</div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="card">
-        <h3>Clients</h3>
-        <table><thead><tr><th>#</th><th>Nomi</th><th>Olib kelgan</th><th>Lenta</th><th>Berilgan</th><th>Qolgan</th><th></th></tr></thead>
-        <tbody>{clients.map((c, i)=>(<tr key={c.id}><td>{i+1}</td><td>{c.name}</td><td>{c.brought_quantity}</td><td>{c.tape_used}</td><td>{c.paid_amount}</td><td>{c.remaining_amount}</td><td><button className="btn-danger" onClick={()=>deleteRow('clients', c.id)}>O'chirish</button></td></tr>))}</tbody></table>
+      <div className="card"><h3>Mijozlar</h3></div>
+      <div className="grid">
+        {clients.map(c=>(
+          <div className="card" key={c.id}>
+            <div className="row"><strong>{c.name}</strong><button className="btn danger" onClick={()=>remove('clients', c.id)}>O'chirish</button></div>
+            <div className="kv">
+              <strong>Olib kelgan:</strong><div>{fmt(c.brought_quantity)}</div>
+              <strong>Lenta:</strong><div>{fmt(c.tape_used)}</div>
+              <strong>Berilgan:</strong><div>{fmt(c.paid_amount)} so'm</div>
+              <strong>Qolgan:</strong><div>{fmt(c.remaining_amount)} so'm</div>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div className="card">
-        <h3>Custom Section</h3>
-        <table><thead><tr><th>#</th><th>Nomi</th><th>Olib kelgan</th><th>Lenta</th><th>Berilgan</th><th>Qolgan</th><th></th></tr></thead>
-        <tbody>{customs.map((c, i)=>(<tr key={c.id}><td>{i+1}</td><td>{c.name}</td><td>{c.brought_quantity}</td><td>{c.tape_used}</td><td>{c.paid_amount}</td><td>{c.remaining_amount}</td><td><button className="btn-danger" onClick={()=>deleteRow('custom_section', c.id)}>O'chirish</button></td></tr>))}</tbody></table>
+      <div className="card"><h3>Custom</h3></div>
+      <div className="grid">
+        {customs.map(c=>(
+          <div className="card" key={c.id}>
+            <div className="row"><strong>{c.name}</strong><button className="btn danger" onClick={()=>remove('custom_section', c.id)}>O'chirish</button></div>
+            <div className="kv">
+              <strong>Olib kelgan:</strong><div>{fmt(c.brought_quantity)}</div>
+              <strong>Lenta:</strong><div>{fmt(c.tape_used)}</div>
+              <strong>Berilgan:</strong><div>{fmt(c.paid_amount)} so'm</div>
+              <strong>Qolgan:</strong><div>{fmt(c.remaining_amount)} so'm</div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )

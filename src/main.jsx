@@ -5,6 +5,13 @@ import App from './App'
 import AdminPage from './admin/AdminPage'
 import './styles.css'
 
+// Register service worker for PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(()=>{})
+  })
+}
+
 createRoot(document.getElementById('root')).render(
   <BrowserRouter>
     <Routes>

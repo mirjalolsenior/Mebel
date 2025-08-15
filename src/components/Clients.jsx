@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react'
 import { supabase } from '../supabaseClient'
+import { num, fmt } from '../utils'
 
 export default function Clients(){
   const [items,setItems] = useState([])
@@ -9,80 +10,82 @@ export default function Clients(){
 
   async function fetchItems(){
     const { data, error } = await supabase.from('clients').select('*').order('created_at',{ascending:false})
-    if(!error) setItems(data)
+    if(error) return console.error(error)
+    setItems(data || [])
   }
 
-  useEffect(()=>{ fetchItems()
-    const sub = supabase.channel('public:clients')
-      .on('postgres_changes',{event:'*',schema:'public',table:'clients'},()=>fetchItems())
+  useEffect(()=>{
+    fetchItems()
+    const ch = supabase.channel('public:clients')
+      .on('postgres_changes', {event:'*', schema:'public', table:'clients'}, fetchItems)
       .subscribe()
-    return ()=> supabase.removeChannel(sub)
-  },[])
+    return ()=>{ supabase.removeChannel(ch) }
+  }, [])
 
   useEffect(()=>{
-    const paid = items.reduce((s,i)=>s+Number(i.paid_amount||0),0)
-    const rem = items.reduce((s,i)=>s+Number(i.remaining_amount||0),0)
-    setTotals({paid,remaining:rem})
-  },[items])
-
-  const handleChange = e=> setForm({...form,[e.target.name]:e.target.value})
+    let paid=0, remaining=0
+    for(const it of items){ paid += num(it.paid_amount); remaining += num(it.remaining_amount) }
+    setTotals({paid, remaining})
+  }, [items])
 
   async function addItem(e){
     e.preventDefault()
     const payload = {
-      name: form.name || '',
-      brought_quantity: Number(form.brought_quantity||0),
-      tape_used: Number(form.tape_used||0),
-      paid_amount: Number(form.paid_amount||0),
-      remaining_amount: Number(form.remaining_amount||0)
+      name: form.name?.trim(),
+      brought_quantity: num(form.brought_quantity),
+      tape_used: num(form.tape_used),
+      paid_amount: num(form.paid_amount),
+      remaining_amount: num(form.remaining_amount),
     }
     const { error } = await supabase.from('clients').insert(payload)
-    if(!error){
-      setForm({name:'',brought_quantity:'',tape_used:'',paid_amount:'',remaining_amount:''})
-      setToast('Mijoz qo\'shildi')
-      setTimeout(()=>setToast(null),3000)
-    } else alert('Insert error: '+error.message)
+    if(error) return alert(error.message)
+    setForm({name:'',brought_quantity:'',tape_used:'',paid_amount:'',remaining_amount:''})
+    setToast("Qo'shildi"); setTimeout(()=>setToast(null), 1500)
+  }
+
+  async function remove(id){
+    if(!confirm("O'chirishni tasdiqlaysizmi?")) return
+    const { error } = await supabase.from('clients').delete().eq('id', id)
+    if(error) alert(error.message)
   }
 
   return (
     <div>
       <div className="card">
-        <h3>Mijoz qo'shish</h3>
-        <form onSubmit={addItem}>
-          <div className="form-row">
-            <input name="name" value={form.name} onChange={handleChange} placeholder="Mijoz nomi" />
-            <input name="brought_quantity" value={form.brought_quantity} onChange={handleChange} placeholder="Olib kelgan tovar" />
-            <input name="tape_used" value={form.tape_used} onChange={handleChange} placeholder="Lenta urilgan" />
-            <input name="paid_amount" value={form.paid_amount} onChange={handleChange} placeholder="Berilgan pul" />
-            <input name="remaining_amount" value={form.remaining_amount} onChange={handleChange} placeholder="Qolgan pul" />
-          </div>
-          <div style={{marginTop:8}}><button type="submit">Qo'shish</button></div>
+        <form className="form-row" onSubmit={addItem}>
+          <input placeholder="Nomi" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} required />
+          <input placeholder="Olib kelgan miqdor" type="number" value={form.brought_quantity} onChange={e=>setForm({...form,brought_quantity:e.target.value})} />
+          <input placeholder="Lenta" type="number" value={form.tape_used} onChange={e=>setForm({...form,tape_used:e.target.value})} />
+          <input placeholder="Berilgan (so'm)" type="number" value={form.paid_amount} onChange={e=>setForm({...form,paid_amount:e.target.value})} />
+          <input placeholder="Qolgan (so'm)" type="number" value={form.remaining_amount} onChange={e=>setForm({...form,remaining_amount:e.target.value})} />
+          <button className="btn primary" type="submit">Qo'shish</button>
         </form>
       </div>
 
       <div className="card">
-        <h3>Mijozlar</h3>
-        <table>
-          <thead><tr><th>#</th><th>Mijoz</th><th>Olib kelgan</th><th>Lenta</th><th>Berilgan</th><th>Qolgan</th></tr></thead>
-          <tbody>
-            {items.map((it, idx)=>(
-              <tr key={it.id}>
-                <td>{idx+1}</td>
-                <td>{it.name}</td>
-                <td>{it.brought_quantity}</td>
-                <td>{it.tape_used}</td>
-                <td>{it.paid_amount}</td>
-                <td>{it.remaining_amount}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <div className="totals card" style={{marginTop:8}}>
-          <div className="card">Jami to'langan: {totals.paid} so'm</div>
-          <div className="card">Jami qolgan: {totals.remaining} so'm</div>
+        <div className="row">
+          <div className="badge">Jami to'langan: {fmt(totals.paid)} so'm</div>
+          <div className="badge">Jami qolgan: {fmt(totals.remaining)} so'm</div>
         </div>
       </div>
+
+      <div className="grid">
+        {items.map((it)=>(
+          <div className="card" key={it.id}>
+            <div className="row">
+              <strong>{it.name}</strong>
+              <button className="btn danger" onClick={()=>remove(it.id)}>O'chirish</button>
+            </div>
+            <div className="kv">
+              <strong>Olib kelgan:</strong><div>{fmt(it.brought_quantity)}</div>
+              <strong>Lenta:</strong><div>{fmt(it.tape_used)}</div>
+              <strong>Berilgan:</strong><div>{fmt(it.paid_amount)} so'm</div>
+              <strong>Qolgan:</strong><div>{fmt(it.remaining_amount)} so'm</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {toast && <div className="toast">{toast}</div>}
     </div>
   )
