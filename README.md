@@ -1,13 +1,18 @@
-Mebel Final — Netlify-ready project
+Mebel — Polished (Netlify-ready)
 
-Structure:
-- Tovarlar (Products)
-- Zakazlar (Orders)
-- Doimiy mijozlar (LoyalClients)
-- Mijozlar (Clients)
+Features:
+- 4 sections: Tovarlar, Zakazlar, Doimiy mijozlar, Mijozlar
+- Card-based UI, modern minimal design, stylish inputs
+- Supabase CRUD + Realtime notifications
+- PWA (manifest + service worker)
+- .env.example included — use Netlify Environment Variables for production
 
-Important:
-- Update environment variables in Netlify: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_ADMIN_PASSWORD
-- Build: npm run build
-- Publish directory: dist
-- First load: allow Notifications when browser asks (to receive realtime toasts)
+How to run locally:
+1. Copy .env.example -> .env and fill values OR set Netlify env variables
+2. npm i
+3. npm run dev
+
+Netlify deploy:
+- Build command: npm run build
+- Publish dir: dist
+- Ensure env vars set in Netlify

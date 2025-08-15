@@ -17,14 +17,14 @@ export default function Orders(){
     fetchItems()
     requestNotificationPermission()
     const ch = supabase.channel('public:orders')
-      .on('postgres_changes',{event:'*',schema:'public',table:'orders'}, ()=>fetchItems())
+      .on('postgres_changes',{event:'*',schema:'public',table:'orders'}, (payload)=>{ fetchItems(); if(payload.eventType==='INSERT') showNotification('Yangi zakaz', { body: payload.new.product }) })
       .subscribe()
     return ()=>{ supabase.removeChannel(ch) }
   },[])
 
   useEffect(()=>{
-    let count = items.length, sum=0, paid=0
-    for(const it of items){ sum+=num(it.total_price); paid+=num(it.paid_amount) }
+    let count=0,sum=0,paid=0
+    for(const it of items){ count++; sum+=num(it.total_price); paid+=num(it.paid_amount) }
     setTotals({count,sum,paid,debt:sum-paid})
   },[items])
 
@@ -36,13 +36,13 @@ export default function Orders(){
     setForm({client_name:'',client_phone:'',product:'',quantity:'',total_price:'',paid_amount:'',status:'yangi',note:''})
   }
 
-  async function remove(id){ if(!confirm("O'chirishni tasdiqlaysizmi?")) return; const { error } = await supabase.from('orders').delete().eq('id', id); if(error) alert(error.message); else fetchItems() }
+  async function removeItem(id){ if(!confirm("O'chirishni tasdiqlaysizmi?")) return; const { error } = await supabase.from('orders').delete().eq('id', id); if(error) alert(error.message); else fetchItems() }
 
   return (
     <div>
       <div className="card">
-        <h3>Buyurtma qo'shish</h3>
-        <form className="form-row" onSubmit={addItem}>
+        <h3>Zakaz qo'shish</h3>
+        <form className="form-grid" onSubmit={addItem}>
           <input placeholder="Mijoz ismi" value={form.client_name} onChange={e=>setForm({...form,client_name:e.target.value})} required />
           <input placeholder="Telefon" value={form.client_phone} onChange={e=>setForm({...form,client_phone:e.target.value})} />
           <input placeholder="Mahsulot" value={form.product} onChange={e=>setForm({...form,product:e.target.value})} />
@@ -50,23 +50,20 @@ export default function Orders(){
           <input placeholder="Jami summa (so'm)" type="number" value={form.total_price} onChange={e=>setForm({...form,total_price:e.target.value})} />
           <input placeholder="To'langan (so'm)" type="number" value={form.paid_amount} onChange={e=>setForm({...form,paid_amount:e.target.value})} />
           <select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}>
-            <option value="yangi">Yangi</option>
-            <option value="jarayon">Jarayonda</option>
-            <option value="tugallangan">Tugallangan</option>
+            <option value="yangi">Yangi</option><option value="jarayon">Jarayonda</option><option value="tugallangan">Tugallangan</option>
           </select>
-          <input placeholder="Izoh" value={form.note} onChange={e=>setForm({...form,note:e.target.value})} />
-          <button className="btn primary" type="submit">Qo'shish</button>
+          <textarea placeholder="Izoh" value={form.note} onChange={e=>setForm({...form,note:e.target.value})} />
+          <div style={{display:'flex',alignItems:'center'}}><button className="btn primary" type="submit">Qo'shish</button></div>
         </form>
       </div>
 
-      <div className="card">
+      <div className="card" style={{marginTop:12}}>
         <h3>Zakazlar</h3>
         <div className="grid">
           {items.map(it=>(
-            <div className="card" key={it.id}>
-              <div style={{display:'flex',justifyContent:'space-between'}}>
-                <strong>{it.product}</strong>
-                <span className="badge">{it.status}</span>
+            <article className="orderCard" key={it.id}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <h4>{it.product}</h4><span className="badge">{it.status}</span>
               </div>
               <div className="kv">
                 <strong>Mijoz:</strong><div>{it.client_name} — {it.client_phone}</div>
@@ -77,17 +74,17 @@ export default function Orders(){
                 <strong>Sana:</strong><div>{new Date(it.created_at).toLocaleString()||'-'}</div>
               </div>
               <div style={{display:'flex',justifyContent:'flex-end',gap:8,marginTop:8}}>
-                <button className="btn" onClick={()=>{ if(confirm('O\'chirishni tasdiqlaysizmi?')){ supabase.from('orders').delete().eq('id',it.id).then(()=>fetchItems()) } }}>O'chirish</button>
+                <button className="btn" onClick={()=>removeItem(it.id)}>O'chirish</button>
               </div>
-            </div>
+            </article>
           ))}
         </div>
 
-        <div style={{marginTop:12,display:'flex',gap:12}}>
-          <div className="card"><strong>Jami zakazlar</strong><div style={{fontWeight:700}}>{fmt(totals.count)}</div></div>
-          <div className="card"><strong>Jami summa</strong><div style={{fontWeight:700}}>{fmt(totals.sum)} so'm</div></div>
-          <div className="card"><strong>Jami to'langan</strong><div style={{fontWeight:700}}>{fmt(totals.paid)} so'm</div></div>
-          <div className="card"><strong>Jami qarzdorlik</strong><div style={{fontWeight:700}}>{fmt(totals.debt)} so'm</div></div>
+        <div className="summaryRow">
+          <div className="statCard"><div className="statLabel">Jami zakazlar</div><div className="statValue">{fmt(totals.count)}</div></div>
+          <div className="statCard"><div className="statLabel">Jami summa</div><div className="statValue">{fmt(totals.sum)} so'm</div></div>
+          <div className="statCard"><div className="statLabel">Jami to'langan</div><div className="statValue">{fmt(totals.paid)} so'm</div></div>
+          <div className="statCard"><div className="statLabel">Jami qarzdorlik</div><div className="statValue">{fmt(totals.debt)} so'm</div></div>
         </div>
       </div>
     </div>

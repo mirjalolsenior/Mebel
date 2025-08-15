@@ -1,4 +1,4 @@
-const CACHE = 'mebel-final-cache-v1';
+const CACHE = 'mebel-polished-cache-v1';
 const ASSETS = ['/', '/index.html', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png', '/src/styles.css'];
 
 self.addEventListener('install', e => {
