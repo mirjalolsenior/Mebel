@@ -1,89 +1,63 @@
 import React, {useEffect, useState} from 'react'
 import { supabase } from '../supabaseClient'
+import { fmt } from '../utils/index'
 
 export default function Clients(){
   const [items,setItems] = useState([])
-  const [form,setForm] = useState({name:'',brought_quantity:'',tape_used:'',paid_amount:'',remaining_amount:''})
-  const [totals,setTotals] = useState({paid:0,remaining:0})
-  const [toast,setToast] = useState(null)
+  const [form,setForm] = useState({name:'',phone:'',address:'',email:'',note:'',is_loyal:false})
 
   async function fetchItems(){
     const { data, error } = await supabase.from('clients').select('*').order('created_at',{ascending:false})
-    if(!error) setItems(data)
+    if(error) return console.error(error)
+    setItems(data||[])
   }
 
-  useEffect(()=>{ fetchItems()
-    const sub = supabase.channel('public:clients')
-      .on('postgres_changes',{event:'*',schema:'public',table:'clients'},()=>fetchItems())
-      .subscribe()
-    return ()=> supabase.removeChannel(sub)
-  },[])
-
-  useEffect(()=>{
-    const paid = items.reduce((s,i)=>s+Number(i.paid_amount||0),0)
-    const rem = items.reduce((s,i)=>s+Number(i.remaining_amount||0),0)
-    setTotals({paid,remaining:rem})
-  },[items])
-
-  const handleChange = e=> setForm({...form,[e.target.name]:e.target.value})
+  useEffect(()=>{ fetchItems() },[])
 
   async function addItem(e){
     e.preventDefault()
-    const payload = {
-      name: form.name || '',
-      brought_quantity: Number(form.brought_quantity||0),
-      tape_used: Number(form.tape_used||0),
-      paid_amount: Number(form.paid_amount||0),
-      remaining_amount: Number(form.remaining_amount||0)
-    }
-    const { error } = await supabase.from('clients').insert(payload)
-    if(!error){
-      setForm({name:'',brought_quantity:'',tape_used:'',paid_amount:'',remaining_amount:''})
-      setToast('Mijoz qo\'shildi')
-      setTimeout(()=>setToast(null),3000)
-    } else alert('Insert error: '+error.message)
+    const { error } = await supabase.from('clients').insert(form)
+    if(error) return alert(error.message)
+    setForm({name:'',phone:'',address:'',email:'',note:'',is_loyal:false})
   }
+
+  async function removeItem(id){ if(!confirm("O'chirishni tasdiqlaysizmi?")) return; const { error } = await supabase.from('clients').delete().eq('id', id); if(error) alert(error.message); else fetchItems() }
 
   return (
     <div>
       <div className="card">
         <h3>Mijoz qo'shish</h3>
-        <form onSubmit={addItem}>
-          <div className="form-row">
-            <input name="name" value={form.name} onChange={handleChange} placeholder="Mijoz nomi" />
-            <input name="brought_quantity" value={form.brought_quantity} onChange={handleChange} placeholder="Olib kelgan tovar" />
-            <input name="tape_used" value={form.tape_used} onChange={handleChange} placeholder="Lenta urilgan" />
-            <input name="paid_amount" value={form.paid_amount} onChange={handleChange} placeholder="Berilgan pul" />
-            <input name="remaining_amount" value={form.remaining_amount} onChange={handleChange} placeholder="Qolgan pul" />
-          </div>
-          <div style={{marginTop:8}}><button type="submit">Qo'shish</button></div>
+        <form className="form-grid" onSubmit={addItem}>
+          <input placeholder="Ismi" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} required />
+          <input placeholder="Telefon" value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} />
+          <input placeholder="Manzil" value={form.address} onChange={e=>setForm({...form,address:e.target.value})} />
+          <input placeholder="Email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} />
+          <textarea placeholder="Izoh" value={form.note} onChange={e=>setForm({...form,note:e.target.value})} />
+          <label style={{display:'flex',alignItems:'center',gap:8}}><input type="checkbox" checked={form.is_loyal} onChange={e=>setForm({...form,is_loyal:e.target.checked})} /> Doimiy mijoz</label>
+          <div style={{display:'flex',alignItems:'center'}}><button className="btn primary" type="submit">Qo'shish</button></div>
         </form>
       </div>
 
-      <div className="card">
+      <div className="card" style={{marginTop:12}}>
         <h3>Mijozlar</h3>
-        <table>
-          <thead><tr><th>#</th><th>Mijoz</th><th>Olib kelgan</th><th>Lenta</th><th>Berilgan</th><th>Qolgan</th></tr></thead>
-          <tbody>
-            {items.map((it, idx)=>(
-              <tr key={it.id}>
-                <td>{idx+1}</td>
-                <td>{it.name}</td>
-                <td>{it.brought_quantity}</td>
-                <td>{it.tape_used}</td>
-                <td>{it.paid_amount}</td>
-                <td>{it.remaining_amount}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <div className="totals card" style={{marginTop:8}}>
-          <div className="card">Jami to'langan: {totals.paid} so'm</div>
-          <div className="card">Jami qolgan: {totals.remaining} so'm</div>
+        <div className="grid">
+          {items.map(it=>(
+            <article className="clientCard" key={it.id}>
+              <div style={{display:'flex',justifyContent:'space-between'}}><strong>{it.name}</strong><span className="badge">{it.is_loyal? 'Doimiy':'-'}</span></div>
+              <div className="kv">
+                <strong>Telefon:</strong><div>{it.phone||'-'}</div>
+                <strong>Manzil:</strong><div>{it.address||'-'}</div>
+                <strong>Email:</strong><div>{it.email||'-'}</div>
+                <strong>Izoh:</strong><div>{it.note||'-'}</div>
+                <strong>Qo'shilgan:</strong><div>{new Date(it.created_at).toLocaleString()||'-'}</div>
+              </div>
+              <div style={{display:'flex',justifyContent:'flex-end',gap:8,marginTop:8}}>
+                <button className="btn" onClick={()=>removeItem(it.id)}>O'chirish</button>
+              </div>
+            </article>
+          ))}
         </div>
       </div>
-      {toast && <div className="toast">{toast}</div>}
     </div>
   )
 }

@@ -1,93 +1,92 @@
 import React, {useEffect, useState} from 'react'
 import { supabase } from '../supabaseClient'
+import { num, fmt, requestNotificationPermission, showNotification } from '../utils/index'
 
 export default function Orders(){
   const [items,setItems] = useState([])
-  const [form,setForm] = useState({product_type:'',model:'',quantity:'',paid_amount:'',delivery_date:''})
-  const [totals,setTotals] = useState({total:0,paid:0,remaining:0})
-  const [toast,setToast] = useState(null)
+  const [form,setForm] = useState({client_name:'',client_phone:'',product:'',quantity:'',total_price:'',paid_amount:'',status:'yangi',note:''})
+  const [totals,setTotals] = useState({count:0,sum:0,paid:0,debt:0})
 
   async function fetchItems(){
     const { data, error } = await supabase.from('orders').select('*').order('created_at',{ascending:false})
-    if(!error) setItems(data)
+    if(error) return console.error(error)
+    setItems(data||[])
   }
 
-  useEffect(()=>{ fetchItems()
-    const sub = supabase.channel('public:orders')
-      .on('postgres_changes',{event:'*',schema:'public',table:'orders'},()=>fetchItems())
+  useEffect(()=>{
+    fetchItems()
+    requestNotificationPermission()
+    const ch = supabase.channel('public:orders')
+      .on('postgres_changes',{event:'*',schema:'public',table:'orders'}, (payload)=>{ fetchItems(); if(payload.eventType==='INSERT') showNotification('Yangi zakaz', { body: payload.new.product }) })
       .subscribe()
-    return ()=> supabase.removeChannel(sub)
+    return ()=>{ supabase.removeChannel(ch) }
   },[])
 
   useEffect(()=>{
-    const total = items.reduce((s,i)=>s+Number(i.quantity||0),0)
-    const paid = items.reduce((s,i)=>s+Number(i.paid_amount||0),0)
-    const rem = items.reduce((s,i)=>s+Number(i.remaining||0),0)
-    setTotals({total,paid,remaining:rem})
+    let count=0,sum=0,paid=0
+    for(const it of items){ count++; sum+=num(it.total_price); paid+=num(it.paid_amount) }
+    setTotals({count,sum,paid,debt:sum-paid})
   },[items])
-
-  const handleChange = e=> setForm({...form,[e.target.name]:e.target.value})
 
   async function addItem(e){
     e.preventDefault()
-    const payload = {
-      product_type: form.product_type || '',
-      model: form.model || '',
-      quantity: Number(form.quantity||0),
-      paid_amount: Number(form.paid_amount||0),
-      remaining: Number(form.quantity||0) - Number(form.paid_amount||0),
-      delivery_date: form.delivery_date || null
-    }
+    const payload = {...form, quantity: parseInt(form.quantity)||0, total_price: num(form.total_price), paid_amount: num(form.paid_amount)}
     const { error } = await supabase.from('orders').insert(payload)
-    if(!error){
-      setForm({product_type:'',model:'',quantity:'',paid_amount:'',delivery_date:''})
-      setToast('Zakaz qo\'shildi')
-      setTimeout(()=>setToast(null),3000)
-    } else alert('Insert error: '+error.message)
+    if(error) return alert(error.message)
+    setForm({client_name:'',client_phone:'',product:'',quantity:'',total_price:'',paid_amount:'',status:'yangi',note:''})
   }
+
+  async function removeItem(id){ if(!confirm("O'chirishni tasdiqlaysizmi?")) return; const { error } = await supabase.from('orders').delete().eq('id', id); if(error) alert(error.message); else fetchItems() }
 
   return (
     <div>
       <div className="card">
         <h3>Zakaz qo'shish</h3>
-        <form onSubmit={addItem}>
-          <div className="form-row">
-            <input name="product_type" value={form.product_type} onChange={handleChange} placeholder="Tovar turi" />
-            <input name="model" value={form.model} onChange={handleChange} placeholder="Raqami/model" />
-            <input name="quantity" value={form.quantity} onChange={handleChange} placeholder="Qancha oldi" />
-            <input name="paid_amount" value={form.paid_amount} onChange={handleChange} placeholder="Qancha berdi" />
-            <input type="date" name="delivery_date" value={form.delivery_date} onChange={handleChange} />
-          </div>
-          <div style={{marginTop:8}}><button type="submit">Qo'shish</button></div>
+        <form className="form-grid" onSubmit={addItem}>
+          <input placeholder="Mijoz ismi" value={form.client_name} onChange={e=>setForm({...form,client_name:e.target.value})} required />
+          <input placeholder="Telefon" value={form.client_phone} onChange={e=>setForm({...form,client_phone:e.target.value})} />
+          <input placeholder="Mahsulot" value={form.product} onChange={e=>setForm({...form,product:e.target.value})} />
+          <input placeholder="Miqdor" type="number" value={form.quantity} onChange={e=>setForm({...form,quantity:e.target.value})} />
+          <input placeholder="Jami summa (so'm)" type="number" value={form.total_price} onChange={e=>setForm({...form,total_price:e.target.value})} />
+          <input placeholder="To'langan (so'm)" type="number" value={form.paid_amount} onChange={e=>setForm({...form,paid_amount:e.target.value})} />
+          <select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}>
+            <option value="yangi">Yangi</option><option value="jarayon">Jarayonda</option><option value="tugallangan">Tugallangan</option>
+          </select>
+          <textarea placeholder="Izoh" value={form.note} onChange={e=>setForm({...form,note:e.target.value})} />
+          <div style={{display:'flex',alignItems:'center'}}><button className="btn primary" type="submit">Qo'shish</button></div>
         </form>
       </div>
 
-      <div className="card">
+      <div className="card" style={{marginTop:12}}>
         <h3>Zakazlar</h3>
-        <table>
-          <thead><tr><th>#</th><th>Turi</th><th>Raqam</th><th>Oldi</th><th>Berildi</th><th>Qoldi</th><th>Sana</th></tr></thead>
-          <tbody>
-            {items.map((it, idx)=>(
-              <tr key={it.id}>
-                <td>{idx+1}</td>
-                <td>{it.product_type}</td>
-                <td>{it.model}</td>
-                <td>{it.quantity}</td>
-                <td>{it.paid_amount}</td>
-                <td>{it.remaining}</td>
-                <td>{it.delivery_date ? new Date(it.delivery_date).toLocaleDateString() : ''}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="grid">
+          {items.map(it=>(
+            <article className="orderCard" key={it.id}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <h4>{it.product}</h4><span className="badge">{it.status}</span>
+              </div>
+              <div className="kv">
+                <strong>Mijoz:</strong><div>{it.client_name} — {it.client_phone}</div>
+                <strong>Miqdor:</strong><div>{fmt(it.quantity)}</div>
+                <strong>Jami:</strong><div>{fmt(it.total_price)} so'm</div>
+                <strong>To'langan:</strong><div>{fmt(it.paid_amount)} so'm</div>
+                <strong>Izoh:</strong><div>{it.note||'-'}</div>
+                <strong>Sana:</strong><div>{new Date(it.created_at).toLocaleString()||'-'}</div>
+              </div>
+              <div style={{display:'flex',justifyContent:'flex-end',gap:8,marginTop:8}}>
+                <button className="btn" onClick={()=>removeItem(it.id)}>O'chirish</button>
+              </div>
+            </article>
+          ))}
+        </div>
 
-        <div className="totals card" style={{marginTop:8}}>
-          <div className="card">Jami oldi: {totals.total}</div>
-          <div className="card">Jami berildi: {totals.paid}</div>
-          <div className="card">Jami qoldi: {totals.remaining}</div>
+        <div className="summaryRow">
+          <div className="statCard"><div className="statLabel">Jami zakazlar</div><div className="statValue">{fmt(totals.count)}</div></div>
+          <div className="statCard"><div className="statLabel">Jami summa</div><div className="statValue">{fmt(totals.sum)} so'm</div></div>
+          <div className="statCard"><div className="statLabel">Jami to'langan</div><div className="statValue">{fmt(totals.paid)} so'm</div></div>
+          <div className="statCard"><div className="statLabel">Jami qarzdorlik</div><div className="statValue">{fmt(totals.debt)} so'm</div></div>
         </div>
       </div>
-      {toast && <div className="toast">{toast}</div>}
     </div>
   )
 }
