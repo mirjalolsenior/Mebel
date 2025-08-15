@@ -1,9 +1,9 @@
 {
-  "name": "Mebel Dashboard Deluxe",
+  "name": "Mebel Dashboard Final",
   "short_name": "Mebel",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
+  "background_color": "#ffffff",
   "theme_color": "#4f46e5",
   "icons": [
     {
