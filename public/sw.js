@@ -56,3 +56,22 @@ self.addEventListener("notificationclick", (event) => {
     event.waitUntil(clients.openWindow("/"))
   }
 })
+// public/sw.js
+self.addEventListener("push", (event) => {
+  const data = event.data?.json ? event.data.json() : (event.data || {});
+  const title = data.title || "Sherdor Mebel";
+  const options = {
+    body: data.body || "Yangi bildirishnoma",
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    data: data,
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.openWindow(event.notification?.data?.url || "/")
+  );
+});
